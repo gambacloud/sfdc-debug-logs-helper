@@ -6,11 +6,12 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   build:
     runs-on: windows-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
     - uses: actions/checkout@v4
@@ -28,13 +29,13 @@ jobs:
 
     - name: Build Executable using PyInstaller
       run: |
-        pyinstaller --onefile ^
-        --add-data "static;static" ^
-        --add-data "templates;templates" ^
-        --hidden-import="uvicorn.logging" ^
-        --hidden-import="uvicorn.protocols.http.h11_impl" ^
-        --hidden-import="uvicorn.protocols.websockets.websockets_impl" ^
-        --hidden-import="uvicorn.lifespan.on" ^
+        pyinstaller --onefile `
+        --add-data "static;static" `
+        --add-data "templates;templates" `
+        --hidden-import="uvicorn.logging" `
+        --hidden-import="uvicorn.protocols.http.h11_impl" `
+        --hidden-import="uvicorn.protocols.websockets.websockets_impl" `
+        --hidden-import="uvicorn.lifespan.on" `
         main.py -n SFDC_Debug_Logs_Helper
 
     - name: Upload Artifact
