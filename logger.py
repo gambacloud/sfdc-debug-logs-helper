@@ -7,8 +7,12 @@ def setup_logger():
     logger = logging.getLogger("sfdc_debug_logs")
     logger.setLevel(logging.DEBUG)
     
+    import os
+    data_dir = os.path.join(os.path.expanduser("~"), ".sfdc_debug_logs_helper")
+    os.makedirs(data_dir, exist_ok=True)
+    
     # Create file handler
-    file_handler = logging.FileHandler("app.log", encoding="utf-8")
+    file_handler = logging.FileHandler(os.path.join(data_dir, "app.log"), encoding="utf-8")
     file_handler.setLevel(logging.DEBUG)
     
     # Create console handler

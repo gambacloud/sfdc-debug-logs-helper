@@ -13,6 +13,11 @@ from logger import log, find_open_port
 import sf_service
 import parser
 
+# Centralized data and logs directory in user home
+DATA_DIR = os.path.join(os.path.expanduser("~"), ".sfdc_debug_logs_helper")
+LOGS_DIR = os.path.join(DATA_DIR, "logs")
+os.makedirs(LOGS_DIR, exist_ok=True)
+
 app = FastAPI(title="SFDC Debug Logs Helper")
 
 class CreateTraceRequest(BaseModel):
@@ -201,10 +206,10 @@ async def delete_logs(req: DeleteLogsRequest):
 
 @app.post("/api/logs/{log_id}/download")
 async def download_log(log_id: str, org: Optional[str] = None):
-    """Download an Apex log to the local `.logs` directory."""
+    """Download an Apex log to the local logs directory."""
     try:
-        os.makedirs(".logs", exist_ok=True)
-        file_path = await sf_service.get_apex_log(log_id, ".logs", target_org=org)
+        os.makedirs(LOGS_DIR, exist_ok=True)
+        file_path = await sf_service.get_apex_log(log_id, LOGS_DIR, target_org=org)
         return {"status": "success", "file": file_path}
     except Exception as e:
         log.error(f"Error downloading log {log_id}: {e}")
@@ -212,9 +217,9 @@ async def download_log(log_id: str, org: Optional[str] = None):
 
 @app.get("/api/logs/search")
 async def search_logs(q: str):
-    """Global search across fetched logs in .logs directory."""
+    """Global search across fetched logs in logs directory."""
     try:
-        results = parser.global_search(q, ".logs")
+        results = parser.global_search(q, LOGS_DIR)
         return {"results": results}
     except Exception as e:
         log.error(f"Error searching logs: {e}")
@@ -224,7 +229,7 @@ async def search_logs(q: str):
 async def analyze_log_endpoint(log_id: str):
     """Analyze a single log file."""
     try:
-        results = parser.analyze_log(log_id, ".logs")
+        results = parser.analyze_log(log_id, LOGS_DIR)
         return results
     except Exception as e:
         log.error(f"Error analyzing log {log_id}: {e}")
@@ -234,7 +239,7 @@ async def analyze_log_endpoint(log_id: str):
 async def get_raw_log(log_id: str):
     """Get raw text content of a downloaded log."""
     try:
-        content = sf_service.read_log(log_id, ".logs")
+        content = sf_service.read_log(log_id, LOGS_DIR)
         return {"content": content}
     except Exception as e:
         log.error(f"Error reading raw log {log_id}: {e}")
