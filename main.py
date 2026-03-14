@@ -247,6 +247,15 @@ async def get_raw_log(log_id: str):
 
 if __name__ == "__main__":
     import uvicorn
+    # Check if we are running as a bundled executable
+    is_frozen = getattr(sys, 'frozen', False)
+    
     port = find_open_port(start_port=8000)
     log.info(f"Starting server on port {port}")
-    uvicorn.run("main:app", host="127.0.0.1", port=port, reload=True)
+    
+    if is_frozen:
+        # In frozen mode, don't use reload and use the app object directly
+        uvicorn.run(app, host="127.0.0.1", port=port)
+    else:
+        # In dev mode, reload is helpful
+        uvicorn.run("main:app", host="127.0.0.1", port=port, reload=True)
