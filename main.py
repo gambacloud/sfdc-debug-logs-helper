@@ -24,11 +24,21 @@ class DeleteLogsRequest(BaseModel):
     log_ids: List[str]
     org: Optional[str] = None
 
+# Function to handle path resolution for PyInstaller frozen environment
+def get_resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
 # Mount static files (CSS, JS)
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=get_resource_path("static")), name="static")
 
 # Templates setup
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory=get_resource_path("templates"))
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
