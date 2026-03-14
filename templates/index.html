@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SFDC Debug Logs Helper</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1><i class="fa-solid fa-code-merge" style="margin-right: 8px;"></i>SFDC Debug Logs Helper</h1>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; background: rgba(0,0,0,0.2); padding: 0.25rem 0.5rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                <i class="fa-solid fa-cloud text-secondary"></i>
+                <select id="org-selector" class="input" style="border: none; background: transparent; padding: 0.25rem; width: 200px;">
+                    <option value="">Loading orgs...</option>
+                </select>
+                <button class="btn btn-icon" id="btn-connect-org" title="Connect New Org" style="border: none; background: transparent;"><i class="fa-solid fa-plus"></i></button>
+            </div>
+            <button class="btn btn-primary" id="btn-global-search"><i class="fa-solid fa-search"></i> Global Search</button>
+            <button class="btn btn-accent" id="btn-screenshot" title="Capture Screenshot"><i class="fa-solid fa-camera"></i> Screenshot</button>
+        </div>
+    </header>
+
+    <div class="layout">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <h2>Trace Flags</h2>
+                    <button class="btn btn-icon" id="btn-add-trace" title="Add Trace"><i class="fa-solid fa-plus text-primary"></i></button>
+                </div>
+                <div class="list-container" id="traces-list">
+                    <!-- Traces render here -->
+                </div>
+            </div>
+            
+            <div class="sidebar-section" style="flex: 2;">
+                <div class="section-header">
+                    <h2>Recent Logs</h2>
+                    <div style="font-size: 0.7rem; color: var(--text-secondary); text-align: right;">
+                        <span id="log-count-selected">0</span> selected / <span id="log-count-total">0</span> total
+                    </div>
+                    <div style="display: flex; gap: 0.25rem;">
+                        <button class="btn btn-icon btn-danger" id="btn-delete-logs" title="Delete Selected Logs"><i class="fa-solid fa-trash-can"></i></button>
+                        <button class="btn btn-icon" id="btn-refresh-logs" title="Refresh Logs"><i class="fa-solid fa-arrows-rotate"></i></button>
+                    </div>
+                </div>
+                <!-- Filtering Section -->
+                <div style="padding: 0.5rem 1rem; background: rgba(0,0,0,0.15); border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 0.4rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.2rem;">
+                        <input type="checkbox" id="chk-select-all-logs" title="Select All Displayed Logs">
+                        <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 500;">Select All Displayed</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.4rem;">
+                        <input type="text" id="filter-user" class="input" placeholder="User..." style="padding: 0.3rem; font-size: 0.7rem;">
+                        <input type="text" id="filter-type" class="input" placeholder="Type..." style="padding: 0.3rem; font-size: 0.7rem;">
+                        <input type="text" id="filter-status" class="input" placeholder="Status..." style="padding: 0.3rem; font-size: 0.7rem;">
+                    </div>
+                </div>
+                <div class="list-container" id="logs-list">
+                    <!-- Logs render here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="toolbar" id="main-toolbar" style="display:none;">
+                <h3 id="current-view-title" style="margin:0; font-weight: 500;"></h3>
+                <div style="flex:1"></div>
+                <div id="toolbar-actions" style="display:flex; gap:0.5rem; align-items:center;">
+                    <div class="view-toggler">
+                        <button class="toggle-btn active" data-view="analyzer">Analyzer</button>
+                        <button class="toggle-btn" data-view="raw">Raw Log</button>
+                    </div>
+                </div>
+            </div>
+            <div class="viewer-area" id="viewer-area">
+                <div class="empty-state">
+                    <i class="fa-solid fa-file-code fa-3x" style="color:var(--text-secondary); margin-bottom:1rem; opacity:0.5;"></i>
+                    <h3>No Log Selected</h3>
+                    <p>Select a log from the sidebar to view traces and analyze.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Add Trace Modal -->
+    <div class="modal-overlay" id="add-trace-modal">
+        <div class="modal">
+            <div class="modal-header">Add 20-Minute Trace</div>
+            <div class="modal-body">
+                <div>
+                    <label style="display:block; margin-bottom:0.5rem; font-size:0.875rem;">Search User</label>
+                    <div style="display:flex; gap:0.5rem;">
+                        <input type="text" id="user-search-input" class="input" placeholder="Type name..." style="flex:1;">
+                        <button class="btn btn-primary" id="btn-search-user">Search</button>
+                    </div>
+                </div>
+                <div id="user-search-results" style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; display: none; padding: 0.25rem;"></div>
+                <div id="selected-user-display" style="display:none; color: var(--accent-blue); font-size: 0.875rem; font-weight: 500;">Selected: <span id="sel-user-name"></span></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="document.getElementById('add-trace-modal').classList.remove('active')">Cancel</button>
+                <button class="btn btn-primary" id="btn-confirm-add-trace" disabled>Create Trace</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Search Modal -->
+    <div class="modal-overlay" id="global-search-modal">
+        <div class="modal" style="width: 600px; max-width: 90vw;">
+            <div class="modal-header">Global Log Search</div>
+            <div class="modal-body">
+                <p style="font-size:0.875rem; color:var(--text-secondary); margin-top:0;">Searches through all logs downloaded to your local <code>.logs</code> folder.</p>
+                <div style="display:flex; gap:0.5rem; margin-bottom: 1rem;">
+                    <input type="text" id="global-search-input" class="input" placeholder="Search string (e.g. Exception, Variable Name)..." style="flex:1;">
+                    <button class="btn btn-primary" id="btn-execute-global-search">Search</button>
+                </div>
+                <div id="global-search-results" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; display: none; padding: 0.5rem;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="document.getElementById('global-search-modal').classList.remove('active')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
